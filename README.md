@@ -131,7 +131,7 @@ Also, QoS feature should be explained in detail with its design in your report t
   * parameters:
     * ``--n_sms``: # shared memory segments
     
-    * ``--sms_size``: the size of shared memory segments
+    * ``--sms_size``: the size of shared memory segments, in the unit of bytes.
     
     * ``--file``: specify the file path to be compressed
     
@@ -196,17 +196,21 @@ Library installation on course VM can be requested via Piazza.
 
 
 ## 4. Delivarables
-Please include all reports, Makefile, etc., in a directory and compress it as a tarball. 
-**If you work in a group**, one of you submits the compressed file while the other member submits a text file contained the names of members. Please make the structure inside tarball like below.
+You should submit the compressed source code and report separately through Canvas.
+Please include all source code, Makefile, README, etc., in a directory and compress it as a tarball. 
+Reference instruction is listed at [here](https://github.gatech.edu/cs6210-spring21/project1/blob/master/doc/project_1_submission.md).
+**If you work in a group**, one of you submits the compressed file while the other member submits a text file contained the names of members. 
 
-* File name: project\_2\_\<gt\_account\_id\>.tar.gz
-  * Example: ``project_2_gburdell3.tar.gz``
-     - src: have to have makefile here as well, and it is supposed to be built with `make` and cleaned with `make clean`.
-     - bin: 
-       - build results
-       - input files
-       - output 
-     - project_2_report_<gt_account_id>.pdf
+Please have correct naming and file structure like below: 
+
+* Source code tarball: project\_2\_\<gt\_account\_id\>.tar.gz, e.g. ``project_2_gburdell3.tar.gz``
+  * README.txt (or .md)
+  * src: have to have makefile here as well, and it is supposed to be built with `make` and cleaned with `make clean`.
+  * bin: 
+    - build results
+    - input files
+    - output 
+* Report: project\_2\_report\_\<gt\_account\_id\>.pdf
 
 ### Report
 The report is expected to include (but not limited to) the design choices, reasoning behind the design selection, 
