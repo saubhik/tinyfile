@@ -6,7 +6,7 @@
 
 ---
 
-* You can choose to work in pair on this project. It effects the extra credit part in this project. 
+* You can choose to work in pair on this project. It affects the extra credit part in this project. 
 Please check [here](#extra-credit-qos-quality-of-service).
 * You may share ideas with other pairs, **but you may not share code**.
 * You also may not download code or use any other external libraries without consulting the instructor or TA first.
