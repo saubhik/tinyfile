@@ -2,7 +2,7 @@
 
 **Release Date: Friday Feb. 12, 2021**
 
-**Due Date: Friday Mar. 07, 2021 @ 11:59pm**
+**Due Date: Sunday Mar. 07, 2021 @ 11:59pm**
 
 ---
 
