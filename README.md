@@ -56,23 +56,13 @@ What you need to implement in this project are:
 
 * A service process/daemon that will manage the input requests and send back a response
 * Your design of TinyFile service must incorporate the concept of a service process that actually executes the service.
-* A TinyFile server has 2 working modes: SYNC (blocking) / ASYNC (nonblocking)
+* A TinyFile server has 2 modes of requests: SYNC (blocking) / ASYNC (nonblocking)
 
-  * **Synchronous (SYNC)**
-    * The library you write will need an initialization function that establishes the control structures that you may want to use in your library - queue(s), any common shared memory region you want to use in your library, and soon. 
-Next, you will need functions for your library that allow blocking (synchronous) calls to the TinyFile service. 
-Here, a blocking call means that the sender will block until the caller has received a response from the service
-
-  * **Asynchronous (ASYNC)**
-    * There are times when a process will send a request, but it does not want to wait for the response. 
-This form of request is called asynchronous because the process does not have a specific time ordering with respect to its computations and the receipt of a response. At first glance this may seem easier than synchronous (blocking) communication because the sender does not have to wait for a response, but that is not the case. 
-The service process must still potentially need to know when a response has been received back by the calling process 
 - there may be structures (including the response itself) that must be cleaned up once the response has been received, 
 or certain application logic may start up or continue once the recipient has acknowledged the response.
 
     * For this part of the project you will need to implement asynchronous communication. You have a choice as to how the service process can choose to determine that a response has been delivered. One of the design options to implement async process is to have a blocking function call in the caller that at a later time retrieves the result and initiates the cleanup. The second choice is to let the caller register a callback function that is called by the service process when a response is ready. This also requires that the callback function is called with a reference to the original response. In either case, you will need to think about how to notify the calling process that the request is complete and to deliver any data in the response.
 
-    * The library you implement must have some way to specify a blocking call versus a non-blocking call. Ideally, it should be possible to have both uncompleted synchronous and uncompleted asynchronous calls pending completion at the same time. As before, you have a lot of latitude on your design and you must document it, its shortcomings (if any), and shortfalls in implementation.
 * The service process can use one or more queues on which the requests are queued up.
   * How many you choose to use depends on your design, but must be justified.
 
@@ -83,7 +73,20 @@ or certain application logic may start up or continue once the recipient has ack
 
 ### TinyFile Library
 * You need to implement a library for accessing the TinyFile service—a library that your application can link in.
-* This library will consist of an API for sending requests and getting back a response (in a same function call)
+* This library will consist of an API for sending requests and getting back a response (in a same function call) by two ways:
+
+  * **Synchronous (SYNC)**
+    * The library you write will need an initialization function that establishes the control structures that you may want to use in your library - queue(s), any common shared memory region you want to use in your library, and soon. 
+Next, you will need functions for your library that allow blocking (synchronous) calls to the TinyFile service. 
+Here, a blocking call means that the sender will block until the caller has received a response from the service
+
+  * **Asynchronous (ASYNC)**
+    * There are times when a process will send a request, but it does not want to wait for the response. 
+This form of request is called asynchronous because the process does not have a specific time ordering with respect to its computations and the receipt of a response. At first glance this may seem easier than synchronous (blocking) communication because the sender does not have to wait for a response, but that is not the case. 
+The service process must still potentially need to know when a response has been received back by the calling process 
+
+* The library you implement must have some way to specify a blocking call versus a non-blocking call. 
+Ideally, it should be possible to have both uncompleted synchronous and uncompleted asynchronous calls pending completion at the same time in your application. As before, you have a lot of latitude on your design and you must document it, its shortcomings (if any), and shortfalls in implementation.
 
 ### Sample Application
 * You will need to implement a Sample Application which will be used to demonstrate the functionality of the TinyFile service.
