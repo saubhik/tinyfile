@@ -111,7 +111,7 @@ Also, QoS feature should be explained in detail with its design in your report t
 *For extra credit, you must implement and document the QoS mechanism*.
 
 ### Dependencies
-* snappy-c library: installed on course VMs
+* snappy-c library: should be installed along with your codebase.
 
 ### Argument Synopsis
 
