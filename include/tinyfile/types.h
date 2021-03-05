@@ -20,8 +20,8 @@ typedef enum tinyfile_registry_cmd_t {
     TINYFILE_SERVER_CLOSE
 } tinyfile_registry_cmd_t;
 
-// Unique key per request to retrieve result from shared memory
-typedef int tinyfile_request_key_t;
+// Unique entry index per request to retrieve result from shared memory
+typedef int tinyfile_request_entry_idx_t;
 
 // Priority of request
 typedef unsigned int tinyfile_request_priority_t;
