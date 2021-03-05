@@ -1,6 +1,8 @@
 #ifndef TINYFILE_API_H
 #define TINYFILE_API_H
 
+#include "types.h"
+
 /* API error codes */
 static int TINYFILE_INIT_ERROR = 1;
 static int TINYFILE_EXIT_ERROR = 2;
@@ -15,22 +17,25 @@ extern int tinyfile_exit();
 
 
 /* Synchronous API */
-extern int tinyfile_sync(ipc_arg *arg, ipc_service service, ipc_request_priority priority, ipc_arg *out);
+extern int tinyfile_sync(tinyfile_arg_t *arg, tinyfile_service_t service, tinyfile_request_priority_t priority,
+                         tinyfile_arg_t *out);
 
 
 /* Asynchronous API */
-extern int tinyfile_async(ipc_arg *arg, ipc_service service, ipc_request_priority priority, ipc_request_key *key);
+extern int tinyfile_async(tinyfile_arg_t *arg, tinyfile_service_t service, tinyfile_request_priority_t priority,
+                          tinyfile_request_key_t *key);
 
 
 /* Wait for asynchronous request to complete */
-extern int tinyfile_async_wait(ipc_request_key key, ipc_arg *arg);
+extern int tinyfile_async_wait(tinyfile_request_key_t key, tinyfile_arg_t *arg);
 
 
 /* Join on a group of asynchronous requests */
-extern int tinyfile_async_join(ipc_request_key key, ipc_arg *arg);
+extern int tinyfile_async_join(tinyfile_request_key_t key, tinyfile_arg_t *arg);
 
 
 /* Call a callback function on each key and argument once request is completed */
-extern int tinyfile_async_map(ipc_request_key *keys, int size, void (*fn)(ipc_request_key, ipc_arg *));
+extern int
+tinyfile_async_map(tinyfile_request_key_t *keys, int size, void (*fn)(tinyfile_request_key_t, tinyfile_arg_t *));
 
 #endif //TINYFILE_API_H
