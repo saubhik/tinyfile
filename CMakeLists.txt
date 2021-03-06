@@ -24,3 +24,9 @@ add_executable(tinyfile-server
         include/tinyfile/params.h)
 
 target_link_libraries(tinyfile-server rt pthread)
+
+# Client
+add_executable(tinyfile-client
+        client.c)
+
+target_link_libraries(tinyfile-client tinyfile)

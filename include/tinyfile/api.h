@@ -33,7 +33,7 @@ extern int tinyfile_async_wait(tinyfile_request_entry_idx_t entry_idx, tinyfile_
 
 
 /* Join on a group of asynchronous requests */
-extern int tinyfile_async_join(tinyfile_request_entry_idx_t entry_idx, tinyfile_arg_t *arg);
+extern int tinyfile_async_join(tinyfile_request_entry_idx_t *entry_idxs, tinyfile_arg_t *arg, int num_requests);
 
 
 /* Call a callback function on each key and argument once request is completed */

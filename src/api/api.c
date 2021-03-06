@@ -509,3 +509,26 @@ int tinyfile_async_wait(tinyfile_request_entry_idx_t entry_idx, tinyfile_arg_t *
 
     return 0;
 }
+
+int tinyfile_async_join(tinyfile_request_entry_idx_t *entry_idxs, tinyfile_arg_t *args, int num_requests) {
+    if (num_requests <= 0)
+        return -1;
+
+    int i = 0, done = 0;
+
+    char *requests_done = malloc(sizeof(char) * num_requests);
+    memset(requests_done, 0, (size_t) num_requests);
+
+    while (done < num_requests) {
+        if (!requests_done[i]) {
+            requests_done[i] = (char) is_request_done(entry_idxs[i], args + i);
+            done += requests_done[i];
+        }
+
+        i = (i + 1) % num_requests;
+    }
+
+    free(requests_done);
+
+    return 0;
+}
