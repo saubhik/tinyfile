@@ -76,7 +76,7 @@ void handle_request(tinyfile_request_t *req, client_t *client) {
             mul_service(&arg->mul);
             break;
         default:
-            fprintf(stderr, "ERROR: Invalid service in request by client &d\n", req->pid);
+            fprintf(stderr, "ERROR: Invalid service in request by client %d\n", req->pid);
     }
 
     pthread_mutex_lock(&shared_entry->mutex);
@@ -117,8 +117,6 @@ void *service_worker(void *data) {
                 pthread_mutex_lock(&client->threads_mutex);
                 client->num_threads_completed++;
                 pthread_mutex_unlock(&client->threads_mutex);
-
-                pthread_cond_signal(&client->threads_cond);
             }
         }
     }
@@ -128,6 +126,7 @@ void *service_worker(void *data) {
 
 void start_worker_threads(client_t *client) {
     client->stop_client_threads = 0;
+    int i;
     for (i = 0; i < THREADS_PER_CLIENT; ++i)
         pthread_create(&client->workers[i], NULL, service_worker, (void *) client);
 }
@@ -137,9 +136,19 @@ void init_worker_threads(client_t *client) {
     client->num_threads_started = 0;
     client->num_threads_completed = 0;
     client->threads_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
-    client->threads_cond = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
 
     start_worker_threads(client);
+}
+
+void join_worker_threads(client_t *client) {
+    client->stop_client_threads = 0;
+
+    /* Join all threads except myself */
+    int i;
+    for (i = 0; i < THREADS_PER_CLIENT; ++i) {
+        if (client->workers[i] != pthread_self())
+            pthread_join(client->workers[i], NULL);
+    }
 }
 
 void open_shm(tinyfile_registry_entry_t *registry_entry, client_t *client) {
@@ -154,7 +163,74 @@ void open_shm(tinyfile_registry_entry_t *registry_entry, client_t *client) {
 
     struct stat s;
     fstat(fd, &s);
-    client->shm_size = (size_t)s.st_size;
+    client->shm_size = (size_t) s.st_size;
+
+    client->shm_addr = mmap(NULL, client->shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+    close(fd);
+}
+
+void *resize_shm(void *data) {
+    client_t *client = data;
+
+    int fd;
+
+    if ((fd = shm_open(client->shm_name, O_RDWR, S_IRUSR | S_IWUSR)) == -1) {
+        fprintf(stderr, "ERROR: shm_open() failed in resize_shm() for client %d\n", client->pid);
+        exit(EXIT_FAILURE);
+    }
+
+    struct stat s;
+    fstat(fd, &s);
+    size_t new_shm_size = (size_t) s.st_size;
+
+    char *new_shm_addr = mmap(NULL, new_shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+    tinyfile_shared_entry_t shared_entry;
+    shared_entry.used = 0;
+    shared_entry.done = 0;
+
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+
+    /* Initialize the new shared memory segment */
+    unsigned int i;
+    for (i = (int) client->shm_size / sizeof(tinyfile_shared_entry_t);
+         i < new_shm_size / sizeof(tinyfile_shared_entry_t); ++i) {
+        memcpy(new_shm_addr + i * sizeof(tinyfile_shared_entry_t), &shared_entry, sizeof(tinyfile_shared_entry_t));
+
+        tinyfile_shared_entry_t *entry = (tinyfile_shared_entry_t *) (new_shm_addr +
+                                                                      i * sizeof(tinyfile_shared_entry_t));
+        pthread_mutex_init(&entry->mutex, &attr);
+
+    }
+
+    pthread_mutexattr_destroy(&attr);
+
+    join_worker_threads(client);
+
+    memcpy(new_shm_addr, client->shm_addr, client->shm_size);
+
+    /* Flush changes since server has most updated copy of shared memory */
+    msync(new_shm_addr, client->shm_size, MS_INVALIDATE | MS_SYNC);
+
+    close(fd);
+
+    /* Send response back to client */
+    tinyfile_response_t response;
+    response.request_id = -1;
+    mq_send(client->send_q, (char *) &response, sizeof(tinyfile_response_t), 1);
+
+    /* Unmap old memory */
+    munmap(client->shm_addr, client->shm_size);
+
+    client->shm_addr = new_shm_addr;
+    client->shm_size = new_shm_size;
+
+    start_worker_threads(client);
+
+    return NULL;
 }
 
 int register_client(tinyfile_registry_entry_t *registry_entry) {
@@ -190,7 +266,6 @@ int register_client(tinyfile_registry_entry_t *registry_entry) {
 
 void cleanup_worker_threads(client_t *client) {
     pthread_mutex_destroy(&client->threads_mutex);
-    pthread_cond_destroy(&client->threads_cond);
 
     int i;
     for (i = 0; i < THREADS_PER_CLIENT; i++)
@@ -309,7 +384,7 @@ void init_server() {
     }
 }
 
-int main(int argc, char **argv) {
+int main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
     init_server();
 
     char input[2];

@@ -32,7 +32,6 @@ typedef struct client {
     int num_threads_started;
     int num_threads_completed;
     pthread_mutex_t threads_mutex;
-    pthread_cond_t threads_cond;
     pthread_t workers[THREADS_PER_CLIENT];
 } client_t;
 

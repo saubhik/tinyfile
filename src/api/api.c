@@ -309,6 +309,7 @@ int tinyfile_exit() {
 }
 
 int resize_shm() {
+    /* Increase by TINYFILE_SHM_SIZE slots */
     size_t new_shm_size =
             ((client.shm_size / sizeof(tinyfile_shared_entry_t)) + TINYFILE_SHM_SIZE) * sizeof(tinyfile_shared_entry_t);
 
