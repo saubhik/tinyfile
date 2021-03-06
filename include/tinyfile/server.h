@@ -19,15 +19,15 @@ typedef struct client {
     pid_t pid;
 
     // Queues
-    mqd_t send_queue;
-    mqd_t recv_queue;
+    mqd_t send_q;
+    mqd_t recv_q;
 
     // Shared Memory
     char *shm_addr;
     size_t shm_size;
     char shm_name[100];
 
-    // About client worker threads
+    // Data regarding client's worker threads
     int stop_client_threads;
     int num_threads_started;
     int num_threads_completed;
@@ -65,7 +65,7 @@ int unregister_client(int pid, int close);
 /* POSIX IPC setup and cleanup */
 void open_shm(tinyfile_registry_entry_t *reg, client_t *client);
 
-void *resize_shm_object(void *c);
+void *resize_shm(void *c);
 
 void init_server();
 

@@ -4,6 +4,9 @@
 
 #include <tinyfile/params.h>
 #include <tinyfile/server.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <ftw.h>
 
 mqd_t global_registry;
 pthread_t registry_thread;
@@ -32,6 +35,128 @@ void append_client(client_list_t *node) {
     }
 }
 
+void remove_client(client_list_t *node) {
+    if (node != NULL) {
+        if (node->prev == NULL && node->next == NULL)
+            clients = NULL;
+        else {
+            if (node->prev != NULL)
+                node->prev->next = node->next;
+
+            if (node->next != NULL)
+                node->next->prev = node->prev;
+            else
+                clients->tail = node->prev;
+        }
+    }
+}
+
+void mul_service(tinyfile_mul_arg_t *arg) {
+    int i;
+    for (i = 0; i < 100000; ++i)
+        arg->res = arg->x * arg->y;
+}
+
+client_list_t *find_client(int pid) {
+    client_list_t *list = clients;
+    while (list != NULL && list->client.pid != pid)
+        list = list->next;
+    return list;
+}
+
+void handle_request(tinyfile_request_t *req, client_t *client) {
+    tinyfile_shared_entry_t *shared_entry = (tinyfile_shared_entry_t *) (client->shm_addr +
+                                                                         req->entry_idx *
+                                                                         sizeof(tinyfile_shared_entry_t));
+    tinyfile_arg_t *arg = &shared_entry->arg;
+
+    switch (req->service) {
+        // TODO: Change this.
+        case TINYFILE_MUL:
+            mul_service(&arg->mul);
+            break;
+        default:
+            fprintf(stderr, "ERROR: Invalid service in request by client &d\n", req->pid);
+    }
+
+    pthread_mutex_lock(&shared_entry->mutex);
+    shared_entry->done = 1;
+    pthread_mutex_unlock(&shared_entry->mutex);
+}
+
+void *service_worker(void *data) {
+    client_t *client = data;
+
+    char *buf = malloc(sizeof(tinyfile_request_t));
+    tinyfile_request_t *request;
+    unsigned int priority;
+
+    struct timespec ts; // Timeout for message queue operations
+
+    while (!client->stop_client_threads) {
+        /* 1 ms timeout to get request */
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_nsec += 1000000;
+        ts.tv_sec = 0;
+
+        if (mq_timedreceive(client->recv_q, buf, sizeof(tinyfile_request_t), &priority, &ts) == -1) {
+            request = (tinyfile_request_t *) buf;
+
+            if (request->request_id == -1) {
+                /* Resize shm request from client */
+                pthread_t resize_thread;
+                pthread_create(&resize_thread, NULL, resize_shm, (void *) client);
+                pthread_detach(resize_thread);
+            } else {
+                pthread_mutex_lock(&client->threads_mutex);
+                client->num_threads_started++;
+                pthread_mutex_unlock(&client->threads_mutex);
+
+                handle_request(request, client);
+
+                pthread_mutex_lock(&client->threads_mutex);
+                client->num_threads_completed++;
+                pthread_mutex_unlock(&client->threads_mutex);
+
+                pthread_cond_signal(&client->threads_cond);
+            }
+        }
+    }
+
+    return NULL;
+}
+
+void start_worker_threads(client_t *client) {
+    client->stop_client_threads = 0;
+    for (i = 0; i < THREADS_PER_CLIENT; ++i)
+        pthread_create(&client->workers[i], NULL, service_worker, (void *) client);
+}
+
+void init_worker_threads(client_t *client) {
+    client->stop_client_threads = 0;
+    client->num_threads_started = 0;
+    client->num_threads_completed = 0;
+    client->threads_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    client->threads_cond = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+
+    start_worker_threads(client);
+}
+
+void open_shm(tinyfile_registry_entry_t *registry_entry, client_t *client) {
+    int fd;
+
+    if ((fd = shm_open(registry_entry->shm_name, O_RDWR, S_IRUSR | S_IWUSR)) == -1) {
+        fprintf(stderr, "ERROR: shm_open() failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    memcpy(client->shm_name, registry_entry->shm_name, 100);
+
+    struct stat s;
+    fstat(fd, &s);
+    client->shm_size = (size_t)s.st_size;
+}
+
 int register_client(tinyfile_registry_entry_t *registry_entry) {
     if (find_client(registry_entry->pid) != NULL)
         /* Client already registered */
@@ -40,14 +165,14 @@ int register_client(tinyfile_registry_entry_t *registry_entry) {
     client_t client;
     client.pid = registry_entry->pid;
 
-    client.send_queue = mq_open(registry_entry->send_q_name, O_RDWR);
-    if (client.send_queue == (mqd_t) -1) {
+    client.send_q = mq_open(registry_entry->send_q_name, O_RDWR);
+    if (client.send_q == (mqd_t) -1) {
         fprintf(stderr, "ERROR: mq_open(registry_entry->send_q_name) failed in register_client()\n");
         exit(EXIT_FAILURE);
     }
 
-    client.recv_queue = mq_open(registry_entry->recv_q_name, O_RDWR);
-    if (client.recv_queue == (mqd_t) -1) {
+    client.recv_q = mq_open(registry_entry->recv_q_name, O_RDWR);
+    if (client.recv_q == (mqd_t) -1) {
         fprintf(stderr, "ERROR: mq_open(registry_entry->recv_q_name) failed in register_client()\n");
         exit(EXIT_FAILURE);
     }
@@ -63,15 +188,48 @@ int register_client(tinyfile_registry_entry_t *registry_entry) {
     return 0;
 }
 
+void cleanup_worker_threads(client_t *client) {
+    pthread_mutex_destroy(&client->threads_mutex);
+    pthread_cond_destroy(&client->threads_cond);
+
+    int i;
+    for (i = 0; i < THREADS_PER_CLIENT; i++)
+        pthread_cancel(client->workers[i]);
+}
+
 int unregister_client(int pid, int close) {
     client_list_t *node = find_client(pid);
-    if (node == NULL)
+    if (node == NULL) {
         /* Client already unregistered */
         return 0;
+    }
+
+    client_t *client = &node->client;
 
     if (close) {
-
+        /* Send poison pill if server is closing */
+        tinyfile_registry_entry_t registry_entry;
+        registry_entry.cmd = TINYFILE_SERVER_CLOSE;
+        if (mq_send(client->send_q, (char *) &registry_entry, sizeof(registry_entry), 1)) {
+            fprintf(stderr, "ERROR: Error in mq_send() during unregister_client() to client %d\n", pid);
+        }
     }
+
+    remove_client(node);
+
+    mq_close(client->send_q);
+    mq_close(client->recv_q);
+
+    /* Wait for all worker threads to complete */
+    while (client->num_threads_started != client->num_threads_completed);
+
+    cleanup_worker_threads(client);
+
+    munmap(client->shm_addr, client->shm_size);
+
+    free(node);
+
+    return 0;
 }
 
 static void *registry_handler(__attribute__((unused)) void *p) {

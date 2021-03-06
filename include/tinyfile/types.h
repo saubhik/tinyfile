@@ -10,7 +10,7 @@ typedef union tinyfile_arg_t {
 } tinyfile_arg_t;
 
 typedef enum tinyfile_service_t {
-    IPC_MUL
+    TINYFILE_MUL
 } tinyfile_service_t;
 
 typedef enum tinyfile_registry_cmd_t {
