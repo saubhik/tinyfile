@@ -97,7 +97,7 @@ int request_q_dequeue(tinyfile_request_t *request) {
     return 0;
 }
 
-void *request_q_worker() {
+void *request_q_handler(__attribute__((unused)) void *p) {
     tinyfile_request_t request;
 
     while (!request_q_params.stop_worker) {
@@ -116,7 +116,7 @@ void async_req_q_init() {
     request_q_params.cond = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
     request_q_params.queue = NULL;
     request_q_params.stop_worker = 0;
-    pthread_create(&request_q_params.worker, NULL, request_q_worker, NULL);
+    pthread_create(&request_q_params.worker, NULL, request_q_handler, NULL);
 }
 
 void async_req_q_destroy() {
@@ -319,7 +319,7 @@ int resize_shm() {
     if (new_shm_size > TINYFILE_SHM_MAX_SIZE) {
         /* Do not resize beyond shm max size */
         request_q_params.stop_worker = 0;
-        pthread_create(&request_q_params.worker, NULL, request_q_worker, NULL);
+        pthread_create(&request_q_params.worker, NULL, request_q_handler, NULL);
         return 0;
     }
 
@@ -360,7 +360,7 @@ int resize_shm() {
 
         /* Start async request queue worker */
         request_q_params.stop_worker = 0;
-        pthread_create(&request_q_params.worker, NULL, request_q_worker, NULL);
+        pthread_create(&request_q_params.worker, NULL, request_q_handler, NULL);
 
         return 0;
     }

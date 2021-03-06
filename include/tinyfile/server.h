@@ -5,6 +5,8 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include "messages.h"
+
 // Number of worker threads for a single client
 #define THREADS_PER_CLIENT 10
 
@@ -12,7 +14,7 @@
 /*
  * Client description as seen by server
  */
-typedef struct __client {
+typedef struct client {
     // Client pid
     pid_t pid;
 
@@ -32,36 +34,36 @@ typedef struct __client {
     pthread_mutex_t threads_mutex;
     pthread_cond_t threads_cond;
     pthread_t workers[THREADS_PER_CLIENT];
-} client;
+} client_t;
 
 
 /*
  * Doubly linked list of clients
  */
-typedef struct __client_node {
-    client client;
-    struct __client_node *tail;
-    struct __client_node *next;
-    struct __client_node *prev;
-} client_list;
+typedef struct client_node {
+    client_t client;
+    struct client_node *tail;
+    struct client_node *next;
+    struct client_node *prev;
+} client_list_t;
 
 
 /* Client list management */
-client_list *find_client(int pid);
+client_list_t *find_client(int pid);
 
-void remove_client(client_list *node);
+void remove_client(client_list_t *node);
 
-void append_client(client_list *node);
+void append_client(client_list_t *node);
 
 
 /* Client registration functions */
-int register_client(ipc_registry *reg);
+int register_client(tinyfile_registry_entry_t *reg);
 
 int unregister_client(int pid, int close);
 
 
 /* POSIX IPC setup and cleanup */
-void open_shm_object(ipc_registry *reg, client *client);
+void open_shm(tinyfile_registry_entry_t *reg, client_t *client);
 
 void *resize_shm_object(void *c);
 
@@ -71,8 +73,8 @@ void exit_server();
 
 
 /* Server API functions */
-void mul_service(ipc_mul_arg *arg);
+void mul_service(tinyfile_mul_arg_t *arg);
 
-void handle_request(ipc_request *req, client *client);
+void handle_request(tinyfile_request_t *req, client_t *client);
 
 #endif // TINYFILE_SERVER_H

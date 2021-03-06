@@ -5,7 +5,7 @@
 #ifndef TINYFILE_PARAMS_H
 #define TINYFILE_PARAMS_H
 
-static char *TINYFILE_REGISTRY_QUEUE = "/tinyfile-queue-registry";
+static char *TINYFILE_REGISTRY_QUEUE = "/tinyfile-registryq";
 
 static char *TINYFILE_SENDQ_PREFIX = "/tinyfile-sendq-";
 static char *TINYFILE_RECVQ_PREFIX = "/tinyfile-recvq-";
