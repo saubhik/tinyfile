@@ -12,7 +12,7 @@ CLIENT := $(BINDIR)/tinyfile-client
 SERVER := $(BINDIR)/tinyfile-server
 LIB := $(BINDIR)/libtinyfile.a
 
-.PHONY: all lib client server clean submission
+.PHONY: all lib client server clean
 
 all: lib client server
 
