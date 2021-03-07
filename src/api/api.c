@@ -4,7 +4,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/mman.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 #include "tinyfile/params.h"
 #include "tinyfile/api.h"
@@ -43,9 +43,9 @@ typedef struct request_q {
     struct request_q *next;
 } request_q;
 
-struct request_q_params {  // TODO: Change name?
+struct request_q_params {
     pthread_t worker;
-    int stop_worker;  // TODO: Change name?
+    int stop_worker;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
     request_q *queue;
@@ -121,7 +121,7 @@ void async_req_q_init() {
 
 void async_req_q_destroy() {
     pthread_mutex_lock(&request_q_params.mutex);
-    request_q *head = request_q_params.queue, *next;
+    request_q *head = request_q_params.queue, *next = NULL;
     while (head != NULL) {
         next = head->next;
         free(head);
@@ -217,7 +217,7 @@ int create_shm() {
 
         /* Init the mutexes in each shared_entry object */
         tinyfile_shared_entry_t *entry =
-                (tinyfile_shared_entry_t *) client.shm_addr + i * sizeof(tinyfile_shared_entry_t);
+                (tinyfile_shared_entry_t *) (client.shm_addr + i * sizeof(tinyfile_shared_entry_t));
         pthread_mutex_init(&entry->mutex, &attr);
     }
 

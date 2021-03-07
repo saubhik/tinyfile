@@ -99,7 +99,7 @@ void *service_worker(void *data) {
         ts.tv_nsec += 1000000;
         ts.tv_sec = 0;
 
-        if (mq_timedreceive(client->recv_q, buf, sizeof(tinyfile_request_t), &priority, &ts) == -1) {
+        if (mq_timedreceive(client->recv_q, buf, sizeof(tinyfile_request_t), &priority, &ts) != -1) {
             request = (tinyfile_request_t *) buf;
 
             if (request->request_id == -1) {
@@ -141,7 +141,7 @@ void init_worker_threads(client_t *client) {
 }
 
 void join_worker_threads(client_t *client) {
-    client->stop_client_threads = 0;
+    client->stop_client_threads = 1;
 
     /* Join all threads except myself */
     int i;
@@ -241,13 +241,15 @@ int register_client(tinyfile_registry_entry_t *registry_entry) {
     client_t client;
     client.pid = registry_entry->pid;
 
-    client.send_q = mq_open(registry_entry->send_q_name, O_RDWR);
+    /* Send to recv_q of client */
+    client.send_q = mq_open(registry_entry->recv_q_name, O_RDWR);
     if (client.send_q == (mqd_t) -1) {
         fprintf(stderr, "ERROR: mq_open(registry_entry->send_q_name) failed in register_client()\n");
         exit(EXIT_FAILURE);
     }
 
-    client.recv_q = mq_open(registry_entry->recv_q_name, O_RDWR);
+    /* Receive from send_q of client */
+    client.recv_q = mq_open(registry_entry->send_q_name, O_RDWR);
     if (client.recv_q == (mqd_t) -1) {
         fprintf(stderr, "ERROR: mq_open(registry_entry->recv_q_name) failed in register_client()\n");
         exit(EXIT_FAILURE);
@@ -259,7 +261,7 @@ int register_client(tinyfile_registry_entry_t *registry_entry) {
     node->client = client;
     append_client(node);
 
-    init_worker_threads(&client);
+    init_worker_threads(&node->client);
 
     return 0;
 }

@@ -30,13 +30,13 @@ int main() {
 
     printf("Time to perform first %d async requests: %ld usecs\n", num_async / 2, diff_usec);
 
-    tinyfile_arg_t sync_args[num_sync];
+    tinyfile_arg_t sync_args[num_sync], sync_outs[num_sync];
     priority = 10;
 
     for (i = 0; i < num_sync; ++i) {
         sync_args[i].mul.x = i * 20;
         sync_args[i].mul.y = i * 22;
-        tinyfile_sync(&sync_args[i], TINYFILE_MUL, priority, &sync_args[i]);
+        tinyfile_sync(&sync_args[i], TINYFILE_MUL, priority, &sync_outs[i]);
     }
 
     for (i = num_async / 2; i < num_async; ++i) {
