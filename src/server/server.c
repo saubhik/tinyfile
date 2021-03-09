@@ -55,10 +55,41 @@ void remove_client(client_list_t *node) {
 
 int compress_service(tinyfile_arg_t *arg) {
     FILE *fp;
-    if ((fp = fopen(arg->source_file_path, "a")) == NULL)
+
+    /* Read source file to be compressed */
+    if ((fp = fopen(arg->source_file_path, "r")) == NULL)
         return -1;
 
-    fprintf(fp, "Hello!\n");
+    if (fseek(fp, 0L, SEEK_END) != 0)
+        return -1;
+
+    long buf_size = ftell(fp);
+    if (buf_size == -1)
+        return -1;
+
+    if (fseek(fp, 0L, SEEK_SET) != 0)
+        return -1;
+
+    char *source = malloc(sizeof(char) * (buf_size + 1));
+    size_t source_len = fread(source, sizeof(char), buf_size, fp);
+    if (ferror(fp) != 0)
+        return -1;
+
+    fclose(fp);
+
+    /* Compression using snappy-c */
+    size_t compressed_len = snappy_max_compressed_length(source_len);
+    char *compressed = malloc(sizeof(char) * compressed_len);
+    struct snappy_env env;
+    snappy_init_env(&env);
+    snappy_compress(&env, source, buf_size, compressed, &compressed_len);
+    snappy_free_env(&env);
+
+    /* Write compressed buffer to compressed file path */
+    if ((fp = fopen(arg->compressed_file_path, "w")) == NULL)
+        return -1;
+
+    fprintf(fp, "%s", compressed);
 
     fclose(fp);
 
@@ -81,7 +112,7 @@ void handle_request(tinyfile_request_t *req, client_t *client) {
     switch (req->service) {
         case TINYFILE_COMPRESS:
             if (compress_service(arg))
-                fprintf(stderr, "ERROR: Could not open file for client %d\n", req->pid);
+                fprintf(stderr, "ERROR: Error during file handling for client %d\n", req->pid);
             break;
         default:
             fprintf(stderr, "ERROR: Invalid service in request by client %d\n", req->pid);
