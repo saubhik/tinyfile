@@ -47,5 +47,5 @@ $(OBJDIR):
 	mkdir -p $@
 
 clean:
-	rm $(OBJDIR)/*.o
+	rm -f $(OBJDIR)/*.o
 	rm $(BINDIR)/*

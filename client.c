@@ -49,7 +49,7 @@ int main() {
 
     clock_gettime(CLOCK_REALTIME, &ts2);
     diff.tv_sec = ts2.tv_sec - ts1.tv_sec;
-    diff.tv_nsec = ts2.tv_nsec - ts2.tv_nsec;
+    diff.tv_nsec = ts2.tv_nsec - ts1.tv_nsec;
     diff_usec = diff.tv_sec * 1000000 + (long) (diff.tv_nsec / 1000.0);
 
     printf("Time to complete all %d sync and %d async requests (in parallel): %ld usecs\n", num_sync, num_async,
