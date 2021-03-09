@@ -29,7 +29,7 @@ $(CLIENT): $(OBJDIR)/client.o | $(BINDIR)
 	$(CC) -L$(BINDIR) $^ -o $@ -ltinyfile $(LIBS)
 
 $(SERVER): $(OBJDIR)/tinyfile_server.o | $(BINDIR)
-	$(CC) $^ -o $@ $(LIBS)
+	$(CC) include/snappy-c/snappy.c $^ -o $@ $(LIBS)
 
 $(OBJDIR)/client.o: $(LIB) client.c | $(OBJDIR)
 	$(CC) $(CCFLAGS) $(INCLUDES) client.c -o $@

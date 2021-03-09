@@ -1,16 +1,14 @@
 #ifndef TINYFILE_TYPES_H
 #define TINYFILE_TYPES_H
 
-typedef struct tinyfile_mul_arg_t {
-    int x, y, res;
-} tinyfile_mul_arg_t;
-
-typedef union tinyfile_arg_t {
-    tinyfile_mul_arg_t mul;
+typedef struct tinyfile_arg_t {
+    char *source;
+    size_t source_len;
+    char *compressed;
 } tinyfile_arg_t;
 
 typedef enum tinyfile_service_t {
-    TINYFILE_MUL
+    TINYFILE_COMPRESS
 } tinyfile_service_t;
 
 typedef enum tinyfile_registry_cmd_t {

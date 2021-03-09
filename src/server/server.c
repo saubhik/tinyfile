@@ -8,6 +8,8 @@
 #include <string.h>
 #include <ftw.h>
 
+#include <snappy-c/snappy.h>
+
 mqd_t global_registry;
 pthread_t registry_thread;
 static int STOP_REGISTRY = 0;
@@ -51,10 +53,14 @@ void remove_client(client_list_t *node) {
     }
 }
 
-void mul_service(tinyfile_mul_arg_t *arg) {
-    int i;
-    for (i = 0; i < 100000; ++i)
-        arg->res = arg->x * arg->y;
+void compress_service(tinyfile_arg_t *arg) {
+    size_t compressed_len = snappy_max_compressed_length(arg->source_len);
+    arg->compressed = malloc(sizeof(char) * compressed_len);
+
+    struct snappy_env env;
+    snappy_init_env(&env);
+    snappy_compress(&env, arg->source, arg->source_len, arg->compressed, &compressed_len);
+    snappy_free_env(&env);
 }
 
 client_list_t *find_client(int pid) {
@@ -71,9 +77,8 @@ void handle_request(tinyfile_request_t *req, client_t *client) {
     tinyfile_arg_t *arg = &shared_entry->arg;
 
     switch (req->service) {
-        // TODO: Change this.
-        case TINYFILE_MUL:
-            mul_service(&arg->mul);
+        case TINYFILE_COMPRESS:
+            compress_service(arg);
             break;
         default:
             fprintf(stderr, "ERROR: Invalid service in request by client %d\n", req->pid);
