@@ -53,14 +53,16 @@ void remove_client(client_list_t *node) {
     }
 }
 
-void compress_service(tinyfile_arg_t *arg) {
-    size_t compressed_len = snappy_max_compressed_length(arg->source_len);
-    arg->compressed = malloc(sizeof(char) * compressed_len);
+int compress_service(tinyfile_arg_t *arg) {
+    FILE *fp;
+    if ((fp = fopen(arg->source_file_path, "a")) == NULL)
+        return -1;
 
-    struct snappy_env env;
-    snappy_init_env(&env);
-    snappy_compress(&env, arg->source, arg->source_len, arg->compressed, &compressed_len);
-    snappy_free_env(&env);
+    fprintf(fp, "Hello!\n");
+
+    fclose(fp);
+
+    return 0;
 }
 
 client_list_t *find_client(int pid) {
@@ -78,7 +80,8 @@ void handle_request(tinyfile_request_t *req, client_t *client) {
 
     switch (req->service) {
         case TINYFILE_COMPRESS:
-            compress_service(arg);
+            if (compress_service(arg))
+                fprintf(stderr, "ERROR: Could not open file for client %d\n", req->pid);
             break;
         default:
             fprintf(stderr, "ERROR: Invalid service in request by client %d\n", req->pid);

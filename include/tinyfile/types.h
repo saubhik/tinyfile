@@ -2,9 +2,8 @@
 #define TINYFILE_TYPES_H
 
 typedef struct tinyfile_arg_t {
-    char *source;
-    size_t source_len;
-    char *compressed;
+    char source_file_path[150];
+    char compressed_file_path[150];
 } tinyfile_arg_t;
 
 typedef enum tinyfile_service_t {

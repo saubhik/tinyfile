@@ -72,7 +72,7 @@ void exit_server();
 
 
 /* Server API functions */
-void compress_service(tinyfile_arg_t *arg);
+int compress_service(tinyfile_arg_t *arg);
 
 void handle_request(tinyfile_request_t *req, client_t *client);
 
