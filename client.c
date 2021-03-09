@@ -12,31 +12,6 @@ int main() {
     tinyfile_request_entry_idx_t entry_index;
     tinyfile_request_priority_t priority = 1;
 
-//    FILE *fp = fopen("bin/input/test.txt", "r");
-//    if (fp != NULL) {
-//        if (fseek(fp, 0L, SEEK_END) == 0) {
-//            long bufsize = ftell(fp);
-//            if (bufsize == -1) {
-//                fprintf(stderr, "ERROR: ftell() failed\n");
-//                exit(EXIT_FAILURE);
-//            }
-//
-//            arg.source = malloc(sizeof(char) * (bufsize + 1));
-//
-//            if (fseek(fp, 0L, SEEK_SET) != 0) {
-//                fprintf(stderr, "ERROR: fseek() failed\n");
-//                exit(EXIT_FAILURE);
-//            }
-//
-//            arg.source_len = fread(arg.source, sizeof(char), bufsize, fp);
-//
-//            if (ferror(fp) != 0) {
-//                fprintf(stderr, "ERROR: Error reading file");
-//                exit(EXIT_FAILURE);
-//            }
-//        }
-//    }
-
     static char *source_file_path = "bin/input/input.txt";
     static char *compressed_file_path = "bin/input/output.txt";
     memcpy(arg.source_file_path, source_file_path, strlen(source_file_path));
@@ -48,11 +23,17 @@ int main() {
     printf("Asynchronous call tinyfile_async() made.\n");
     printf("Now calling tinyfile_async_wait().\n");
 
-    /* Wait till the result is ready */
-    tinyfile_arg_t result;
-    tinyfile_async_wait(entry_index, &result);
+    /* Wait till computation done. */
+    tinyfile_async_wait(entry_index);
 
     printf("tinyfile_async_wait() finished. Compression done.\n");
+
+    /*
+     * Check synchronous call to tinyfile.
+     */
+    printf("Making synchronous call to tinyfile_sync().\n");
+    tinyfile_sync(&arg, TINYFILE_COMPRESS, priority);
+    printf("Synchronous call completed.\n");
 
     tinyfile_exit();
 

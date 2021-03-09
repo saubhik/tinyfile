@@ -434,7 +434,7 @@ int prepare_request(tinyfile_arg_t *arg, tinyfile_service_t service, tinyfile_re
 /*
  * Check is request is served by server by looking at shared memory entry.
  */
-int is_request_done(tinyfile_request_entry_idx_t entry_idx, tinyfile_arg_t *arg) {
+int is_request_done(tinyfile_request_entry_idx_t entry_idx) {
     /* Make sure resizing is not occurring since client.shm_addr can change */
     pthread_mutex_lock(&client.shm_resize_lock);
 
@@ -450,7 +450,6 @@ int is_request_done(tinyfile_request_entry_idx_t entry_idx, tinyfile_arg_t *arg)
     if (entry->done == 1) {
         /* Copy the result and make the shared entry ready for re-use */
         entry->used = 0;
-        if (arg != NULL) *arg = entry->arg;
         entry->done = 0;
         done = 1;
     }
@@ -464,18 +463,17 @@ int is_request_done(tinyfile_request_entry_idx_t entry_idx, tinyfile_arg_t *arg)
  * Wait for response from Tinyfile server.
  * Implemented using Exponential Backoff.
  */
-void recv_response(tinyfile_request_entry_idx_t entry_idx, tinyfile_arg_t *arg) {
+void recv_response(tinyfile_request_entry_idx_t entry_idx) {
     unsigned int backoff = 1;
 
     while (1) {
-        if (is_request_done(entry_idx, arg)) break;
+        if (is_request_done(entry_idx)) break;
         backoff *= 2;
         usleep(backoff);
     }
 }
 
-int tinyfile_sync(tinyfile_arg_t *arg, tinyfile_service_t service, tinyfile_request_priority_t priority,
-                  tinyfile_arg_t *out) {
+int tinyfile_sync(tinyfile_arg_t *arg, tinyfile_service_t service, tinyfile_request_priority_t priority) {
     int error;
 
     /* Prepare the request */
@@ -486,7 +484,7 @@ int tinyfile_sync(tinyfile_arg_t *arg, tinyfile_service_t service, tinyfile_requ
     request_q_enqueue(&req);
 
     /* Wait for response */
-    recv_response(req.entry_idx, out);
+    recv_response(req.entry_idx);
 
     return 0;
 }
@@ -504,13 +502,13 @@ int tinyfile_async(tinyfile_arg_t *arg, tinyfile_service_t service, tinyfile_req
     return 0;
 }
 
-int tinyfile_async_wait(tinyfile_request_entry_idx_t entry_idx, tinyfile_arg_t *arg) {
-    recv_response(entry_idx, arg);
+int tinyfile_async_wait(tinyfile_request_entry_idx_t entry_idx) {
+    recv_response(entry_idx);
 
     return 0;
 }
 
-int tinyfile_async_join(tinyfile_request_entry_idx_t *entry_idxs, tinyfile_arg_t *args, int num_requests) {
+int tinyfile_async_join(tinyfile_request_entry_idx_t *entry_idxs, int num_requests) {
     if (num_requests <= 0)
         return -1;
 
@@ -521,7 +519,7 @@ int tinyfile_async_join(tinyfile_request_entry_idx_t *entry_idxs, tinyfile_arg_t
 
     while (done < num_requests) {
         if (!requests_done[i]) {
-            requests_done[i] = (char) is_request_done(entry_idxs[i], args + i);
+            requests_done[i] = (char) is_request_done(entry_idxs[i]);
             done += requests_done[i];
         }
 
