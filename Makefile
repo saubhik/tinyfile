@@ -48,4 +48,4 @@ $(OBJDIR):
 
 clean:
 	rm -f $(OBJDIR)/*.o
-	rm $(BINDIR)/*
+	rm $(BINDIR)/* || true
