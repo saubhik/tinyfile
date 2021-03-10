@@ -124,13 +124,13 @@ int main(int argc, char **argv) {
         diff_msec = diff.tv_sec * 1000 + (long) (diff.tv_nsec / 1000000.0);
 
         if (call_method == 'a')
-            printf("Time to perform %d async requests: %ld usecs.\n", lines, diff_msec);
+            printf("Time to perform %d async requests: %ld millisecs.\n", lines, diff_msec);
         else
-            printf("Time to perform %d sync requests: %ld usecs.\n", lines, diff_msec);
+            printf("Time to perform %d sync requests: %ld millisecs.\n", lines, diff_msec);
 
-        printf("Compressed files:\n");
-        for (j = 0; j < lines; ++j)
-            printf("%s\n", out[j].compressed_file_path);
+        // printf("Compressed files:\n");
+        // for (j = 0; j < lines; ++j)
+        //    printf("%s\n", out[j].compressed_file_path);
     } else {
         /* Single file compression request. */
 
@@ -156,9 +156,9 @@ int main(int argc, char **argv) {
         diff_msec = diff.tv_sec * 1000 + (long) (diff.tv_nsec / 1000000.0);
 
         if (call_method == 'a')
-            printf("Time to perform single async request: %ld usecs.\n", diff_msec);
+            printf("Time to perform single async request: %ld millisecs.\n", diff_msec);
         else
-            printf("Time to perform single sync requests: %ld usecs.\n", diff_msec);
+            printf("Time to perform single sync requests: %ld millisecs.\n", diff_msec);
 
         printf("Compressed file: %s\n", out.compressed_file_path);
     }

@@ -193,7 +193,9 @@ int create_shm() {
         return TINYFILE_CREATE_SHM_ERROR;
     }
 
-    client.shm_size = sizeof(tinyfile_shared_entry_t) * TINYFILE_SHM_SIZE;
+    size_t num_entries = TINYFILE_SHM_SIZE / sizeof(tinyfile_shared_entry_t);
+
+    client.shm_size = sizeof(tinyfile_shared_entry_t) * num_entries;
     ftruncate(client.shm_fd, client.shm_size);
 
     client.shm_addr = mmap(NULL, client.shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, client.shm_fd, 0);
@@ -211,7 +213,7 @@ int create_shm() {
     pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
 
     int i;
-    for (i = 0; i < TINYFILE_SHM_SIZE; ++i) {
+    for (i = 0; i < num_entries; ++i) {
         /* Copy shared_entry object to shared memory region */
         memcpy(client.shm_addr + i * sizeof(tinyfile_shared_entry_t), &shared_entry, sizeof(tinyfile_shared_entry_t));
 
@@ -309,9 +311,11 @@ int tinyfile_exit() {
 }
 
 int resize_shm() {
-    /* Increase by TINYFILE_SHM_SIZE slots */
+    /* Increase by num_entries slots */
+    size_t num_entries = TINYFILE_SHM_SIZE / sizeof(tinyfile_shared_entry_t);
+
     size_t new_shm_size =
-            ((client.shm_size / sizeof(tinyfile_shared_entry_t)) + TINYFILE_SHM_SIZE) * sizeof(tinyfile_shared_entry_t);
+            ((client.shm_size / sizeof(tinyfile_shared_entry_t)) + num_entries) * sizeof(tinyfile_shared_entry_t);
 
     /* Do not resize beyond shm max size */
     if (new_shm_size > TINYFILE_SHM_MAX_SIZE)
