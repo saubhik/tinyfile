@@ -6,39 +6,40 @@
 
 int main(int argc, char **argv) {
     static struct option long_options[] = {
-            {"file",  required_argument, 0, 'f'},
-            {"files", required_argument, 0, 'l'},
-            {"state", required_argument, 0, 's'},
-            {0, 0,                       0, 0}
+            {"file",     required_argument, 0, 'f'},
+            {"files",    required_argument, 0, 'l'},
+            {"state",    required_argument, 0, 's'},
+            {"sms_size", required_argument, 0, 'm'},
+            {0, 0,                          0, 0}
     };
 
     char call_method; // 'a' for async, 's' for sync
-    char file_path[150], file_list_path[150];
+    char file_path[150], file_list_path[150], *ptr;
     unsigned short int file_list = 0;
 
     int option_index = 0, c;
     while ((c = getopt_long(argc, argv, "f:l:s:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
-                printf("option %s", long_options[option_index].name);
+                printf("Using option %s", long_options[option_index].name);
                 if (optarg)
                     printf(" with arg %s", optarg);
                 printf("\n");
                 break;
 
             case 'f':
-                printf("option -f with value %s\n", optarg);
+                printf("Using option --file with value %s\n", optarg);
                 strcpy(file_path, optarg);
                 break;
 
             case 'l':
-                printf("option -l with value %s\n", optarg);
+                printf("Using option --files with value %s\n", optarg);
                 file_list = 1;
                 strcpy(file_list_path, optarg);
                 break;
 
             case 's':
-                printf("option -s with value %s\n", optarg);
+                printf("Using option --state with value %s\n", optarg);
                 if (strcmp(optarg, "ASYNC") == 0)
                     call_method = 'a';
                 else if (strcmp(optarg, "SYNC") == 0)
@@ -47,8 +48,13 @@ int main(int argc, char **argv) {
                     printf("Unexpected state value\n");
                 break;
 
+            case 'm':
+                printf("Using option --sms_size with value %s\n", optarg);
+                tinyfile_set_shm_size(strtol(optarg, &ptr, 10));
+                break;
+
             default:
-                printf("Required options (--file or --files) with --state");
+                printf("Required options (--file or --files), --state, --sms_size");
                 abort();
         }
     }

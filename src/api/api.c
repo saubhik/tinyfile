@@ -151,7 +151,7 @@ int create_queues() {
     sprintf(client.recv_q_name + length, "%ld", (long) pid);
 
     struct mq_attr attr;
-    attr.mq_maxmsg = 10; // TODO: Check this.
+    attr.mq_maxmsg = 10;
 
     /* Create send queue for requests from client */
     attr.mq_msgsize = sizeof(tinyfile_request_t);
@@ -313,16 +313,13 @@ int resize_shm() {
     size_t new_shm_size =
             ((client.shm_size / sizeof(tinyfile_shared_entry_t)) + TINYFILE_SHM_SIZE) * sizeof(tinyfile_shared_entry_t);
 
+    /* Do not resize beyond shm max size */
+    if (new_shm_size > TINYFILE_SHM_MAX_SIZE)
+        return 0;
+
     /* Don't send requests to server for now */
     request_q_params.stop_worker = 1;
     pthread_join(request_q_params.worker, NULL);
-
-    if (new_shm_size > TINYFILE_SHM_MAX_SIZE) {
-        /* Do not resize beyond shm max size */
-        request_q_params.stop_worker = 0;
-        pthread_create(&request_q_params.worker, NULL, request_q_handler, NULL);
-        return 0;
-    }
 
     pthread_mutex_lock(&client.shm_resize_lock);
 
@@ -531,4 +528,9 @@ int tinyfile_async_join(tinyfile_request_entry_idx_t *entry_idxs, int num_reques
     free(requests_done);
 
     return 0;
+}
+
+void tinyfile_set_shm_size(size_t sms_size) {
+    TINYFILE_SHM_SIZE = sms_size;
+    TINYFILE_SHM_MAX_SIZE = sms_size;  // Avoid resize of shm.
 }

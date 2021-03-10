@@ -41,4 +41,8 @@ extern int
 tinyfile_async_map(tinyfile_request_entry_idx_t *entry_idxs, int size,
                    void (*fn)(tinyfile_request_entry_idx_t, tinyfile_arg_t *));
 
+
+/* Set shared memory size, and max size */
+extern void tinyfile_set_shm_size(size_t sms_size);
+
 #endif //TINYFILE_API_H
