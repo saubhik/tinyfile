@@ -29,8 +29,8 @@ typedef struct client {
 
     // Data regarding client's worker threads
     int stop_client_threads;
-    int num_threads_started;
-    int num_threads_completed;
+    int num_requests_started;
+    int num_requests_completed;
     pthread_mutex_t threads_mutex;
     pthread_t workers[THREADS_PER_CLIENT];
 } client_t;

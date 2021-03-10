@@ -36,12 +36,6 @@ extern int tinyfile_async_wait(tinyfile_request_entry_idx_t entry_idx, tinyfile_
 extern int tinyfile_async_join(tinyfile_request_entry_idx_t *entry_idxs, int num_requests, tinyfile_arg_t *outs);
 
 
-/* Call a callback function on each key and argument once request is completed */
-extern int
-tinyfile_async_map(tinyfile_request_entry_idx_t *entry_idxs, int size,
-                   void (*fn)(tinyfile_request_entry_idx_t, tinyfile_arg_t *));
-
-
 /* Set shared memory size, and max size */
 extern void tinyfile_set_shm_size(size_t sms_size);
 

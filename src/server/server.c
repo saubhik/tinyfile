@@ -152,13 +152,13 @@ void *service_worker(void *data) {
                 pthread_detach(resize_thread);
             } else {
                 pthread_mutex_lock(&client->threads_mutex);
-                client->num_threads_started++;
+                client->num_requests_started++;
                 pthread_mutex_unlock(&client->threads_mutex);
 
                 handle_request(request, client);
 
                 pthread_mutex_lock(&client->threads_mutex);
-                client->num_threads_completed++;
+                client->num_requests_completed++;
                 pthread_mutex_unlock(&client->threads_mutex);
             }
         }
@@ -176,8 +176,8 @@ void start_worker_threads(client_t *client) {
 
 void init_worker_threads(client_t *client) {
     client->stop_client_threads = 0;
-    client->num_threads_started = 0;
-    client->num_threads_completed = 0;
+    client->num_requests_started = 0;
+    client->num_requests_completed = 0;
     client->threads_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
 
     start_worker_threads(client);
@@ -341,7 +341,7 @@ int unregister_client(int pid, int close) {
     mq_close(client->recv_q);
 
     /* Wait for all worker threads to complete */
-    while (client->num_threads_started != client->num_threads_completed);
+    while (client->num_requests_started != client->num_requests_completed);
 
     cleanup_worker_threads(client);
 
