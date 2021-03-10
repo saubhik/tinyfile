@@ -85,6 +85,10 @@ int compress_service(tinyfile_arg_t *arg) {
     snappy_compress(&env, source, buf_size, compressed, &compressed_len);
     snappy_free_env(&env);
 
+    /* Generate compressed file path */
+    strcpy(arg->compressed_file_path, arg->source_file_path);
+    strcat(arg->compressed_file_path, ".compressed");
+
     /* Write compressed buffer to compressed file path */
     if ((fp = fopen(arg->compressed_file_path, "w")) == NULL)
         return -1;
