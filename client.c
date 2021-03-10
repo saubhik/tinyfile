@@ -2,6 +2,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <time.h>
 #include "tinyfile/api.h"
 
 int main(int argc, char **argv) {
@@ -61,6 +62,9 @@ int main(int argc, char **argv) {
 
     tinyfile_init();
 
+    struct timespec ts1, ts2, diff;
+    long diff_msec;
+
     tinyfile_request_priority_t priority = 1;
 
     if (file_list) {
@@ -96,60 +100,67 @@ int main(int argc, char **argv) {
         fclose(fp);
         free(line);
 
+        clock_gettime(CLOCK_REALTIME, &ts1);
+
         int j;
         for (j = 0; j < lines; ++j) {
             if (call_method == 'a') {
-
-                printf("Making non-blocking async call: tinyfile_async() for file %s.\n", args[j].source_file_path);
                 tinyfile_async(&args[j], TINYFILE_COMPRESS, priority, &keys[j]);
-
             } else if (call_method == 's') {
-
-                printf("Making blocking sync call: tinyfile_sync() for file %s.\n", args[j].source_file_path);
                 tinyfile_sync(&args[j], TINYFILE_COMPRESS, priority, &out[j]);
-                printf("Sync call done. Compressed file: %s.\n", out[j].compressed_file_path);
-
             } else {
-
                 fprintf(stderr, "ERROR: Unexpected state\n");
                 exit(EXIT_FAILURE);
-
             }
         }
 
-        if (call_method == 'a') {
-
-            printf("Calling tinyfile_async_join().\n");
+        /* Join the async requests if computation done. */
+        if (call_method == 'a')
             tinyfile_async_join(keys, lines, out);
-            printf("tinyfile_async_join() completed. Compressed files:\n");
 
-            for (j = 0; j < lines; ++j)
-                printf("%s\n", out[j].compressed_file_path);
+        clock_gettime(CLOCK_REALTIME, &ts2);
+        diff.tv_sec = ts2.tv_sec - ts1.tv_sec;
+        diff.tv_nsec = ts2.tv_nsec - ts1.tv_nsec;
+        diff_msec = diff.tv_sec * 1000 + (long) (diff.tv_nsec / 1000000.0);
 
-        }
+        if (call_method == 'a')
+            printf("Time to perform %d async requests: %ld usecs.\n", lines, diff_msec);
+        else
+            printf("Time to perform %d sync requests: %ld usecs.\n", lines, diff_msec);
+
+        printf("Compressed files:\n");
+        for (j = 0; j < lines; ++j)
+            printf("%s\n", out[j].compressed_file_path);
     } else {
+        /* Single file compression request. */
+
         tinyfile_arg_t arg, out;
         tinyfile_request_entry_idx_t key;
-
         strcpy(arg.source_file_path, file_path);
 
+        clock_gettime(CLOCK_REALTIME, &ts1);
+
         if (call_method == 'a') {
-
-            printf("Making non-blocking async call: tinyfile_async() for file %s.\n", arg.source_file_path);
             tinyfile_async(&arg, TINYFILE_COMPRESS, priority, &key);
-
-            printf("Async call done. Calling tinyfile_async_wait().\n");
-
             tinyfile_async_wait(key, &out);
-            printf("tinyfile_async_wait() completed. Compressed file: %s.\n", out.compressed_file_path);
-
         } else if (call_method == 's') {
-
-            printf("Making blocking sync call: tinyfile_sync() for file %s.\n", arg.source_file_path);
             tinyfile_sync(&arg, TINYFILE_COMPRESS, priority, &out);
-            printf("Sync call done. Compressed file: %s.\n", out.compressed_file_path);
-
+        } else {
+            fprintf(stderr, "ERROR: Unexpected state\n");
+            exit(EXIT_FAILURE);
         }
+
+        clock_gettime(CLOCK_REALTIME, &ts2);
+        diff.tv_sec = ts2.tv_sec - ts1.tv_sec;
+        diff.tv_nsec = ts2.tv_nsec - ts1.tv_nsec;
+        diff_msec = diff.tv_sec * 1000 + (long) (diff.tv_nsec / 1000000.0);
+
+        if (call_method == 'a')
+            printf("Time to perform single async request: %ld usecs.\n", diff_msec);
+        else
+            printf("Time to perform single sync requests: %ld usecs.\n", diff_msec);
+
+        printf("Compressed file: %s\n", out.compressed_file_path);
     }
 
     tinyfile_exit();
