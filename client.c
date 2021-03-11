@@ -3,7 +3,15 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <time.h>
+#include <pthread.h>
 #include "tinyfile/api.h"
+
+void *async_join(void *entry_idx) {
+    /* Join the async requests if computation done. */
+    tinyfile_arg_t out;
+    tinyfile_async_wait(*(tinyfile_request_entry_idx_t *) entry_idx, &out);
+    return NULL;
+}
 
 int main(int argc, char **argv) {
     static struct option long_options[] = {
@@ -100,12 +108,15 @@ int main(int argc, char **argv) {
         fclose(fp);
         free(line);
 
+        pthread_t threads[lines];
+
         clock_gettime(CLOCK_REALTIME, &ts1);
 
         int j;
         for (j = 0; j < lines; ++j) {
             if (call_method == 'a') {
                 tinyfile_async(&args[j], TINYFILE_COMPRESS, priority, &keys[j]);
+                pthread_create(&threads[j], NULL, async_join, &keys[j]);
             } else if (call_method == 's') {
                 tinyfile_sync(&args[j], TINYFILE_COMPRESS, priority, &out[j]);
             } else {
@@ -114,9 +125,8 @@ int main(int argc, char **argv) {
             }
         }
 
-        /* Join the async requests if computation done. */
-        if (call_method == 'a')
-            tinyfile_async_join(keys, lines, out);
+        for (j = 0; j < lines; ++j)
+            pthread_join(threads[j], NULL);
 
         clock_gettime(CLOCK_REALTIME, &ts2);
         diff.tv_sec = ts2.tv_sec - ts1.tv_sec;
