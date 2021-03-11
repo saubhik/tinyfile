@@ -125,8 +125,9 @@ int main(int argc, char **argv) {
             }
         }
 
-        for (j = 0; j < lines; ++j)
-            pthread_join(threads[j], NULL);
+        if (call_method == 'a')
+            for (j = 0; j < lines; ++j)
+                pthread_join(threads[j], NULL);
 
         clock_gettime(CLOCK_REALTIME, &ts2);
         diff.tv_sec = ts2.tv_sec - ts1.tv_sec;
